@@ -5,11 +5,11 @@
 #include <WiFiClientSecure.h>
 #define PIN 2
 
-// dati per la connessione al wifi
+// for connecting to wifi
 const char* ssid     = "SSID";
 const char* password = "PASSWORD";
 
-// dati per la connessione https
+// for https request
 const char* host = "monitoringapi.solaredge.com";
 const int httpsPort = 443;
 const unsigned char caCert[] PROGMEM = {
@@ -129,9 +129,10 @@ const unsigned char caCert[] PROGMEM = {
 0x2d, 0x2d, 0x0d, 0x0a};
 const unsigned int caCertLen = 1360;
 
-// depends on your display
+// depends on the display used
 LiquidCrystal_I2C lcd ( 0x27 , 16 , 2 );
 
+// variables
 const char* lastUpdateTime;
 long lifeTimeData;
 long lastYearData;
@@ -166,7 +167,7 @@ void loop() {
   //   return;
   }
 
-  // richiede l'url specifico dell'api cercata
+  // request of specified api
   String url = "URL_OF_REQUESTED_API";
   Serial.print("requesting URL: ");
   Serial.println(url);
@@ -176,7 +177,7 @@ void loop() {
                "Connection: close\r\n\r\n");
   Serial.println("request sent");
 
-  // riceve gli header e li stampa in seriale
+  // receive and print the header of the response
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     Serial.print("header: ");
@@ -187,15 +188,15 @@ void loop() {
     }
   }
 
-  // riga da scartare che non fa parte ne degli header ne del payload 
+  // line to discard, useless for the purpose
   String line = client.readStringUntil('\n');
 
-  // riceve la linea contenente il json richiesto
+  // line with requested data
   line = client.readStringUntil('\n');
   Serial.print("reply: ");
   Serial.println(line);
 
-  // deserializza il json ottenuto in risposta e riempie le variabili corrispondenti alle voci del json ottenuto
+  // deserialization of the json and variables fill
   StaticJsonDocument<384> doc;
   DeserializationError error = deserializeJson(doc, line);
   if (error) {
@@ -212,7 +213,7 @@ void loop() {
   currentPower = overview["currentPower"]["power"]; 
   float lastDayDatakw = lastDayData/1000;
   
-  // stampa sul display i valori
+  // print value on display
   lcd.clear();
 
   lcd.setCursor(0,0);
@@ -227,10 +228,11 @@ void loop() {
   lcd.setCursor(13,1);
   lcd.print("kWh");
 
-  delay(900000); //aggiorna ogni quarto d'ora, stesso tempo di campionamento dell'inverter
+  // 15 minutes delay, the same refresh of the inverter
+  delay(900000);
 }
 
-// connessione al wifi con ssid e password precedentemente assegnati
+// function for connection to wifi
 void connectWifi()
 {
   WiFi.begin(ssid, password);             // Connect to the network
@@ -247,7 +249,7 @@ void connectWifi()
   Serial.println(WiFi.localIP());         // Send the IP address of the ESP8266 to the computer
 }
 
-// sincronizza il tempo tramite sntp, serve per validare il certificato per la richiesta https
+// function for time sync, useful for certificate autentication
 void syncTime(){
   Serial.print("Setting time using SNTP");
   configTime(8 * 3600, 0, "pool.ntp.org", "time.nist.gov");
@@ -264,14 +266,14 @@ void syncTime(){
   Serial.print(asctime(&timeinfo));
 }
 
-// inizializza l'lcd
+// lcd initalization
 void lcdInit(){
   lcd.init();            
   lcd.backlight();       
   lcd.clear(); 
 }
 
-// setta il certificato per il client e lo verifica
+// set and verification of the certificate
 void setCert(){
   bool res = client.setCACert_P(caCert, caCertLen);
   if (!res) {
